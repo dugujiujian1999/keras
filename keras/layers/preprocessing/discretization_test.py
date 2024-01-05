@@ -1,8 +1,8 @@
 import os
 
 import numpy as np
+import pytest
 from absl.testing import parameterized
-from tensorflow import data as tf_data
 
 from keras import backend
 from keras import layers
@@ -11,7 +11,7 @@ from keras import testing
 from keras.saving import saving_api
 
 
-class DicretizationTest(testing.TestCase, parameterized.TestCase):
+class DiscretizationTest(testing.TestCase, parameterized.TestCase):
     def test_discretization_basics(self):
         self.run_layer_test(
             layers.Discretization,
@@ -70,7 +70,13 @@ class DicretizationTest(testing.TestCase, parameterized.TestCase):
         self.assertTrue(backend.is_tensor(output))
         self.assertAllClose(output, expected_output)
 
+    @pytest.mark.skipif(
+        backend.backend() != "tensorflow",
+        reason="tf_data only exists in TensorFlow",
+    )
     def test_tf_data_compatibility(self):
+        from tensorflow import data as tf_data
+
         # With fixed bins
         layer = layers.Discretization(
             bin_boundaries=[0.0, 0.35, 0.5, 1.0], dtype="float32"
@@ -125,6 +131,15 @@ class DicretizationTest(testing.TestCase, parameterized.TestCase):
         model = saving_api.load_model(fpath)
         self.assertAllClose(layer(ref_input), ref_output)
 
+    @pytest.mark.skipif(
+        backend.backend() != "tensorflow",
+        reason="Sparse tensor only works in TensorFlow",
+    )
     def test_sparse_inputs(self):
-        # TODO
-        pass
+        from tensorflow import sparse
+
+        x = sparse.from_dense(np.array([[-1.0, 0.2, 0.7, 1.2]]))
+        layer = layers.Discretization(bin_boundaries=[0.0, 0.5, 1.0])
+        output = layer(x)
+        self.assertTrue(backend.is_tensor(output))
+        self.assertAllClose(output, np.array([[0, 1, 2, 3]]))
