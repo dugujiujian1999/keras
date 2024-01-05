@@ -75,7 +75,7 @@ class DiscretizationTest(testing.TestCase, parameterized.TestCase):
         reason="tf_data only exists in TensorFlow",
     )
     def test_tf_data_compatibility(self):
-        from tensorflow import data as tf_data
+        from keras.utils.module_utils import tensorflow as tf
 
         # With fixed bins
         layer = layers.Discretization(
@@ -83,7 +83,7 @@ class DiscretizationTest(testing.TestCase, parameterized.TestCase):
         )
         x = np.array([[-1.0, 0.0, 0.1, 0.2, 0.4, 0.5, 1.0, 1.2, 0.98]])
         self.assertAllClose(layer(x), np.array([[0, 1, 1, 1, 2, 3, 4, 4, 3]]))
-        ds = tf_data.Dataset.from_tensor_slices(x).batch(1).map(layer)
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(1).map(layer)
         for output in ds.take(1):
             output = output.numpy()
         self.assertAllClose(output, np.array([[0, 1, 1, 1, 2, 3, 4, 4, 3]]))
@@ -94,7 +94,7 @@ class DiscretizationTest(testing.TestCase, parameterized.TestCase):
             np.random.random((32, 3)),
         )
         x = np.array([[0.0, 0.1, 0.3]])
-        ds = tf_data.Dataset.from_tensor_slices(x).batch(1).map(layer)
+        ds = tf.data.Dataset.from_tensor_slices(x).batch(1).map(layer)
         for output in ds.take(1):
             output.numpy()
 
@@ -136,9 +136,9 @@ class DiscretizationTest(testing.TestCase, parameterized.TestCase):
         reason="Sparse tensor only works in TensorFlow",
     )
     def test_sparse_inputs(self):
-        from tensorflow import sparse
+        from keras.utils.module_utils import tensorflow as tf
 
-        x = sparse.from_dense(np.array([[-1.0, 0.2, 0.7, 1.2]]))
+        x = tf.sparse.from_dense(np.array([[-1.0, 0.2, 0.7, 1.2]]))
         layer = layers.Discretization(bin_boundaries=[0.0, 0.5, 1.0])
         output = layer(x)
         self.assertTrue(backend.is_tensor(output))
